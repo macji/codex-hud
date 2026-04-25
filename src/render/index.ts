@@ -1,0 +1,117 @@
+import type { HudElement, LineLayout } from '../config.js';
+import type { RenderContext } from '../types.js';
+import { truncateVisible, visibleLength } from '../utils/terminal.js';
+import { color } from './colors.js';
+import { renderAgentsLine, renderContextLine, renderEnvironmentLine, renderProjectLine, renderTodosLine, renderToolsLine, renderUsageLine } from './session-line.js';
+
+function renderElement(ctx: RenderContext, element: HudElement): string | null {
+  switch (element) {
+    case 'project': return renderProjectLine(ctx);
+    case 'context': return renderContextLine(ctx);
+    case 'usage': return renderUsageLine(ctx);
+    case 'environment': return renderEnvironmentLine(ctx);
+    case 'tools': return renderToolsLine(ctx);
+    case 'agents': return renderAgentsLine(ctx);
+    case 'todos': return renderTodosLine(ctx);
+  }
+}
+
+function separator(width: number): string {
+  return '─'.repeat(Math.max(20, Math.min(width, 120)));
+}
+
+function compact(lines: string[], maxWidth: number): string[] {
+  const joined = lines.join(' │ ');
+  if (visibleLength(joined) <= maxWidth) return [joined];
+  return [truncateVisible(joined, maxWidth)];
+}
+
+function expanded(ctx: RenderContext, maxWidth: number): string[] {
+  const lines = ctx.config.elementOrder
+    .map(element => renderElement(ctx, element))
+    .filter((line): line is string => Boolean(line));
+  if (ctx.config.display.customLine) lines.push(ctx.config.display.customLine);
+  if (!ctx.config.showSeparators) return lines.map(line => truncateVisible(line, maxWidth));
+  const firstActivity = lines.findIndex(line => line.includes('Tools') || line.includes('Agents') || line.includes('Todos') || line.includes('工具') || line.includes('代理') || line.includes('待办'));
+  if (firstActivity <= 0) return lines.map(line => truncateVisible(line, maxWidth));
+  return [
+    ...lines.slice(0, firstActivity),
+    separator(maxWidth),
+    ...lines.slice(firstActivity),
+  ].map(line => truncateVisible(line, maxWidth));
+}
+
+export function renderLines(ctx: RenderContext): string[] {
+  const maxWidth = ctx.config.maxWidth;
+  const lines = expanded(ctx, maxWidth);
+  const layout: LineLayout = ctx.config.lineLayout;
+  return layout === 'compact' ? compact(lines, maxWidth) : lines;
+}
+
+export function render(ctx: RenderContext): string {
+  return `${renderLines(ctx).join('\n')}\n`;
+}
+
+function pct(value: number | null | undefined): string {
+  return value === null || value === undefined || !Number.isFinite(value) ? '?' : `${Math.round(value)}%`;
+}
+
+function contextPct(value: number | null | undefined): string {
+  return value === null || value === undefined || !Number.isFinite(value) ? '?' : `${Math.round(value)}%`;
+}
+
+function compactNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '?';
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+  return String(value);
+}
+
+function bounded(value: number | null | undefined): number {
+  return value === null || value === undefined || !Number.isFinite(value) ? 0 : Math.max(0, Math.min(100, value));
+}
+
+function rawStatusBar(percent: number, width: number): string {
+  const boundedPercent = bounded(percent);
+  const filled = Math.floor((boundedPercent / 100) * width);
+  return `${'█'.repeat(filled)}${'░'.repeat(width - filled)}`;
+}
+
+function statusThemeKey(percent: number): 'low' | 'medium' | 'high' | 'critical' {
+  if (percent >= 95) return 'critical';
+  if (percent > 80) return 'high';
+  if (percent >= 50) return 'medium';
+  return 'low';
+}
+
+function statusIndicator(value: number | null | undefined, ctx: RenderContext): string {
+  const boundedPercent = bounded(value);
+  const text = `[${rawStatusBar(boundedPercent, 10)}] ${contextPct(value)}`;
+  return color.theme(text, statusThemeKey(boundedPercent), ctx.config);
+}
+
+function usageWindow(label: string, value: number | null | undefined): string {
+  return `${label} ${pct(value)}`;
+}
+
+export function renderStatusLine(ctx: RenderContext): string {
+  const snapshot = ctx.snapshot;
+  const contextUsed = bounded(snapshot.context.usedPercentage);
+  const model = [snapshot.model, snapshot.reasoningEffort].filter(Boolean).join(' ');
+  const usage = [
+    usageWindow('5h', snapshot.usage?.fiveHour.usedPercentage),
+    usageWindow('weekly', snapshot.usage?.weekly.usedPercentage),
+  ].join(' | ');
+  const shownUsedTokens = snapshot.context.usedTokens ?? (snapshot.context.windowSize ? 0 : null);
+  const tokenText = `${compactNumber(shownUsedTokens)}/${compactNumber(snapshot.context.windowSize)}`;
+  const firstLine = [
+    color.theme(model ? `${model} │ ${tokenText} │ ` : `${tokenText} │ `, 'context', ctx.config),
+    statusIndicator(contextUsed, ctx),
+  ].join('');
+  const lines = [truncateVisible(firstLine, ctx.config.maxWidth)];
+  if (usage) {
+    lines.push(truncateVisible(color.theme(` ｜${usage}`, 'context', ctx.config), ctx.config.maxWidth));
+  }
+
+  return `${lines.join('\n')}\n`;
+}

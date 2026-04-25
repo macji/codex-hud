@@ -1,0 +1,27 @@
+{
+  "name": "codex-hud",
+  "version": "0.1.0",
+  "description": "Real-time HUD for Codex CLI sessions: context, git, usage, tools, agents, and todos.",
+  "author": {
+    "name": "codex-hud contributors",
+    "url": "https://github.com/macji/codex-hud"
+  },
+  "homepage": "https://github.com/macji/codex-hud",
+  "repository": "https://github.com/macji/codex-hud",
+  "license": "MIT",
+  "keywords": ["codex", "hud", "monitoring", "statusline", "context", "tools", "agents", "todos"],
+  "interface": {
+    "displayName": "Codex HUD",
+    "shortDescription": "Statusline-style HUD for Codex CLI sessions.",
+    "longDescription": "Codex HUD mirrors Claude HUD's session visibility for Codex: model, context, usage limits, git status, tool activity, agents, todos, and configurable layouts.",
+    "developerName": "codex-hud contributors",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Read"],
+    "defaultPrompt": [
+      "Configure codex-hud for this workspace.",
+      "Show my current Codex HUD snapshot.",
+      "Explain codex-hud display options."
+    ],
+    "brandColor": "#10A37F"
+  }
+}
