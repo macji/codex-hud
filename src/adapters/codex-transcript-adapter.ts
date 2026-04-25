@@ -13,6 +13,15 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
+function isGpt55Model(model: unknown): boolean {
+  return typeof model === 'string' && model.toLowerCase() === 'gpt-5.5';
+}
+
+function officialContextWindow(model: unknown, windowSize: number | null | undefined): number | null | undefined {
+  if (isGpt55Model(model) && (windowSize === null || windowSize === undefined || windowSize < 400_000)) return 400_000;
+  return windowSize;
+}
+
 function parseDate(value: unknown): Date | undefined {
   if (typeof value !== 'string') return undefined;
   const date = new Date(value);
@@ -158,11 +167,12 @@ function applyTokenCount(snapshot: Partial<HudSnapshot>, payload: Record<string,
   const input = typeof currentTurn?.input_tokens === 'number' ? currentTurn.input_tokens : null;
   const output = typeof currentTurn?.output_tokens === 'number' ? currentTurn.output_tokens : null;
   const totalTokens = typeof currentTurn?.total_tokens === 'number' ? currentTurn.total_tokens : null;
-  const windowSize = typeof payload.model_context_window === 'number'
+  const rawWindowSize = typeof payload.model_context_window === 'number'
     ? payload.model_context_window
     : typeof info?.model_context_window === 'number'
       ? info.model_context_window
       : context.windowSize;
+  const windowSize = officialContextWindow(snapshot.model, rawWindowSize);
   context.inputTokens = input ?? context.inputTokens;
   context.outputTokens = output ?? context.outputTokens;
   context.usedTokens = totalTokens ?? context.usedTokens;
@@ -241,6 +251,8 @@ export function parseCodexTranscript(transcriptPath: string): Partial<HudSnapsho
         transcriptPath,
       };
       snapshot.codexVersion = typeof payload.cli_version === 'string' ? payload.cli_version : undefined;
+      snapshot.model = typeof payload.model === 'string' ? payload.model : snapshot.model;
+      snapshot.reasoningEffort = typeof payload.model_reasoning_effort === 'string' ? payload.model_reasoning_effort : snapshot.reasoningEffort;
     }
 
     if (payload.type === 'task_started') {

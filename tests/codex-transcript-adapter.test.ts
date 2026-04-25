@@ -41,6 +41,21 @@ test('parseCodexTranscript extracts session, limits, tools and plan todos', () =
   assert.equal(snapshot.todos?.[1]?.status, 'in_progress');
 });
 
+test('parseCodexTranscript upgrades stale GPT-5.5 transcript window to official Codex window', () => {
+  const filePath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'codex-transcript-')), 'session.jsonl');
+  const now = new Date().toISOString();
+  const lines = [
+    { timestamp: now, type: 'session_meta', payload: { id: 's1', timestamp: now, cwd: '/repo', model: 'gpt-5.5', model_reasoning_effort: 'high' } },
+    { timestamp: now, type: 'event_msg', payload: { type: 'token_count', info: { last_token_usage: { total_tokens: 40_000 }, model_context_window: 258_400 } } },
+  ];
+  fs.writeFileSync(filePath, `${lines.map(line => JSON.stringify(line)).join('\n')}\n`);
+
+  const snapshot = parseCodexTranscript(filePath);
+  assert.equal(snapshot.model, 'gpt-5.5');
+  assert.equal(snapshot.context?.windowSize, 400_000);
+  assert.equal(snapshot.context?.usedPercentage, 10);
+});
+
 test('findCodexTranscript prefers current Codex thread id', () => {
   const originalHome = process.env.CODEX_HOME;
   const originalThread = process.env.CODEX_THREAD_ID;
