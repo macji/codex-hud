@@ -11,6 +11,8 @@ gpt-5.5 high │ 96.5K/258.4K │ [███░░░░░░░] 37%
 
 Codex HUD is inspired by [Claude HUD](https://github.com/jarrodwatts/claude-hud), adapted for Codex CLI's configuration files, transcripts, and TUI status surfaces.
 
+![Codex HUD preview](codex-hud-preview.png)
+
 ## What is Codex HUD?
 
 Codex HUD gives you a compact, always-visible view of a Codex session so you do not have to guess what the agent is using or how close the session is to context and rate-limit boundaries.

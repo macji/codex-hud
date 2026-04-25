@@ -11,6 +11,8 @@ gpt-5.5 high │ 96.5K/258.4K │ [███░░░░░░░] 37%
 
 Codex HUD 参考了 [Claude HUD](https://github.com/jarrodwatts/claude-hud) 的产品形态，但实现上适配 Codex CLI 的配置文件、JSONL transcript 和 TUI status surface。
 
+![Codex HUD 预览](codex-hud-preview.png)
+
 ## Codex HUD 是什么？
 
 Codex HUD 用一个紧凑、常驻的视图展示 Codex 当前会话状态，避免你靠猜测判断模型、上下文和限额是否接近边界。
