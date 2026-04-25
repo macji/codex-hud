@@ -98,17 +98,16 @@ export function renderStatusLine(ctx: RenderContext): string {
   const snapshot = ctx.snapshot;
   const contextUsed = bounded(snapshot.context.usedPercentage);
   const model = [snapshot.model, snapshot.reasoningEffort].filter(Boolean).join(' ');
-  const usage = [
-    usageWindow('5h', snapshot.usage?.fiveHour.usedPercentage),
-    usageWindow('weekly', snapshot.usage?.weekly.usedPercentage),
-  ].join(' | ');
   const shownUsedTokens = snapshot.context.usedTokens ?? (snapshot.context.windowSize ? 0 : null);
   const tokenText = `${compactNumber(shownUsedTokens)}/${compactNumber(snapshot.context.windowSize)}`;
-  const line = [
-    color.theme(model ? `${model} ｜ ${tokenText} ｜ ` : `${tokenText} ｜ `, 'context', ctx.config),
+  const parts = [
+    model ? color.theme(model, 'context', ctx.config) : null,
+    color.theme(tokenText, 'context', ctx.config),
     statusIndicator(contextUsed, ctx),
-    color.theme(` ｜${usage}`, 'context', ctx.config),
-  ].join('');
+    color.theme(usageWindow('5h', snapshot.usage?.fiveHour.usedPercentage), 'context', ctx.config),
+    color.theme(usageWindow('weekly', snapshot.usage?.weekly.usedPercentage), 'context', ctx.config),
+  ].filter((part): part is string => Boolean(part));
+  const line = parts.join(' | ');
 
   return `${truncateVisible(line, ctx.config.maxWidth)}\n`;
 }
