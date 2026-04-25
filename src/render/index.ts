@@ -84,10 +84,9 @@ function statusThemeKey(percent: number): 'low' | 'medium' | 'high' | 'critical'
   return 'low';
 }
 
-function statusIndicator(value: number | null | undefined, ctx: RenderContext): string {
+function statusIndicatorText(value: number | null | undefined): string {
   const boundedPercent = bounded(value);
-  const text = `[${rawStatusBar(boundedPercent, 10)}] ${contextPct(value)}`;
-  return color.theme(text, statusThemeKey(boundedPercent), ctx.config);
+  return `[${rawStatusBar(boundedPercent, 10)}] ${contextPct(value)}`;
 }
 
 function usageWindow(label: string, value: number | null | undefined): string {
@@ -101,13 +100,13 @@ export function renderStatusLine(ctx: RenderContext): string {
   const shownUsedTokens = snapshot.context.usedTokens ?? (snapshot.context.windowSize ? 0 : null);
   const tokenText = `${compactNumber(shownUsedTokens)}/${compactNumber(snapshot.context.windowSize)}`;
   const parts = [
-    model ? color.theme(model, 'context', ctx.config) : null,
-    color.theme(tokenText, 'context', ctx.config),
-    statusIndicator(contextUsed, ctx),
-    color.theme(usageWindow('5h', snapshot.usage?.fiveHour.usedPercentage), 'context', ctx.config),
-    color.theme(usageWindow('weekly', snapshot.usage?.weekly.usedPercentage), 'context', ctx.config),
+    model || null,
+    tokenText,
+    statusIndicatorText(contextUsed),
+    usageWindow('5h', snapshot.usage?.fiveHour.usedPercentage),
+    usageWindow('weekly', snapshot.usage?.weekly.usedPercentage),
   ].filter((part): part is string => Boolean(part));
-  const line = parts.join(' | ');
+  const line = color.theme(parts.join(' | '), statusThemeKey(contextUsed), ctx.config);
 
   return `${truncateVisible(line, ctx.config.maxWidth)}\n`;
 }
