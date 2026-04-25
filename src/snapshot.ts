@@ -11,6 +11,19 @@ function merge<T extends object>(...objects: Array<Partial<T> | undefined>): Par
   return Object.assign({}, ...objects.filter(Boolean));
 }
 
+function officialContextWindow(model: string | undefined): number | null {
+  return model === 'gpt-5.5' ? 400_000 : null;
+}
+
+function normalizeContextForModel(context: HudSnapshot['context'], model: string | undefined): HudSnapshot['context'] {
+  const windowSize = officialContextWindow(model);
+  if (!windowSize || context.windowSize === windowSize) return context;
+  const normalized = { ...context, windowSize };
+  normalized.usedPercentage = normalized.usedTokens !== null ? (normalized.usedTokens / windowSize) * 100 : normalized.usedPercentage;
+  normalized.remainingPercentage = normalized.usedPercentage === null ? normalized.remainingPercentage : Math.max(0, 100 - normalized.usedPercentage);
+  return normalized;
+}
+
 function mergeContext(
   configContext: Partial<HudSnapshot>['context'],
   transcriptContext: Partial<HudSnapshot>['context'],
@@ -30,19 +43,22 @@ function mergeContext(
 }
 
 export async function buildSnapshot(raw: RawStdinData | null, cwd = process.cwd()): Promise<HudSnapshot> {
-  const configSnapshot = snapshotFromCodexConfig();
   const transcriptSnapshot = snapshotFromCodexTranscript(cwd);
   const envSnapshot = snapshotFromCodexEnv();
-  const omxSnapshot = snapshotFromOmx(cwd);
   const stdinSnapshot = snapshotFromStdin(raw, cwd);
+  const configSnapshot = snapshotFromCodexConfig(stdinSnapshot.model ?? envSnapshot.model ?? transcriptSnapshot.model);
+  const omxSnapshot = snapshotFromOmx(cwd);
   const effectiveCwd = stdinSnapshot.cwd ?? omxSnapshot.cwd ?? transcriptSnapshot.cwd ?? cwd;
   const session = merge(transcriptSnapshot.session, omxSnapshot.session, stdinSnapshot.session);
+  const model = stdinSnapshot.model ?? envSnapshot.model ?? transcriptSnapshot.model ?? configSnapshot.model;
+  const reasoningEffort = stdinSnapshot.reasoningEffort ?? envSnapshot.reasoningEffort ?? transcriptSnapshot.reasoningEffort ?? configSnapshot.reasoningEffort;
+  const context = normalizeContextForModel(mergeContext(configSnapshot.context, transcriptSnapshot.context, stdinSnapshot.context), model);
   return {
-    model: stdinSnapshot.model ?? configSnapshot.model,
-    reasoningEffort: stdinSnapshot.reasoningEffort ?? configSnapshot.reasoningEffort,
+    model,
+    reasoningEffort,
     projectName: path.basename(effectiveCwd),
     cwd: effectiveCwd,
-    context: mergeContext(configSnapshot.context, transcriptSnapshot.context, stdinSnapshot.context),
+    context,
     usage: stdinSnapshot.usage ?? envSnapshot.usage ?? transcriptSnapshot.usage ?? null,
     git: await getGitStatus(effectiveCwd),
     tools: stdinSnapshot.tools ?? transcriptSnapshot.tools ?? omxSnapshot.tools ?? [],

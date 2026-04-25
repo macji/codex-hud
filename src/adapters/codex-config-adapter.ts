@@ -47,10 +47,10 @@ function readModelsCacheContextWindow(model: string | undefined): number | null 
   }
 }
 
-export function snapshotFromCodexConfig(): Partial<HudSnapshot> {
+export function snapshotFromCodexConfig(modelOverride?: string): Partial<HudSnapshot> {
   const toml = readConfigToml();
-  const model = readQuotedValue(toml, 'model');
-  const contextWindow = readNumberValue(toml, 'model_context_window') ?? readModelsCacheContextWindow(model);
+  const model = modelOverride ?? readQuotedValue(toml, 'model');
+  const contextWindow = officialCodexContextWindow(model) ?? readNumberValue(toml, 'model_context_window') ?? readModelsCacheContextWindow(model);
   return {
     model,
     reasoningEffort: readQuotedValue(toml, 'model_reasoning_effort'),

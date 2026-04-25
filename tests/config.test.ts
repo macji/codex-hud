@@ -32,11 +32,27 @@ test('mergeConfig applies theme overrides', () => {
 test('snapshotFromCodexConfig prefers official GPT-5.5 Codex window over stale model cache', () => {
   const originalHome = process.env.CODEX_HOME;
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-config-'));
-  fs.writeFileSync(path.join(home, 'config.toml'), 'model = "gpt-5.5"\nmodel_reasoning_effort = "high"\n');
+  fs.writeFileSync(path.join(home, 'config.toml'), 'model = "gpt-5.5"\nmodel_reasoning_effort = "high"\nmodel_context_window = 258400\n');
   fs.writeFileSync(path.join(home, 'models_cache.json'), JSON.stringify({ models: [{ slug: 'gpt-5.5', context_window: 272000, effective_context_window_percent: 95 }] }));
   try {
     process.env.CODEX_HOME = home;
     const snapshot = snapshotFromCodexConfig();
+    assert.equal(snapshot.context?.windowSize, 400000);
+  } finally {
+    if (originalHome === undefined) delete process.env.CODEX_HOME;
+    else process.env.CODEX_HOME = originalHome;
+  }
+});
+
+test('snapshotFromCodexConfig uses runtime model override for context fallback', () => {
+  const originalHome = process.env.CODEX_HOME;
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-config-'));
+  fs.writeFileSync(path.join(home, 'config.toml'), 'model = "gpt-5.4"\nmodel_reasoning_effort = "high"\n');
+  fs.writeFileSync(path.join(home, 'models_cache.json'), JSON.stringify({ models: [{ slug: 'gpt-5.5', context_window: 272000 }] }));
+  try {
+    process.env.CODEX_HOME = home;
+    const snapshot = snapshotFromCodexConfig('gpt-5.5');
+    assert.equal(snapshot.model, 'gpt-5.5');
     assert.equal(snapshot.context?.windowSize, 400000);
   } finally {
     if (originalHome === undefined) delete process.env.CODEX_HOME;
