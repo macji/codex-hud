@@ -25,8 +25,14 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
+function officialCodexContextWindow(model: string | undefined): number | null {
+  return model === 'gpt-5.5' ? 400_000 : null;
+}
+
 function readModelsCacheContextWindow(model: string | undefined): number | null {
   if (!model) return null;
+  const officialWindow = officialCodexContextWindow(model);
+  if (officialWindow) return officialWindow;
   try {
     const raw = fs.readFileSync(path.join(getCodexHome(), 'models_cache.json'), 'utf8');
     const parsed = JSON.parse(raw) as unknown;

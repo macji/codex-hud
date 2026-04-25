@@ -29,7 +29,7 @@ test('mergeConfig applies theme overrides', () => {
   assert.equal(config.theme.high, DEFAULT_CONFIG.theme.high);
 });
 
-test('snapshotFromCodexConfig reads effective model cache window', () => {
+test('snapshotFromCodexConfig prefers official GPT-5.5 Codex window over stale model cache', () => {
   const originalHome = process.env.CODEX_HOME;
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-config-'));
   fs.writeFileSync(path.join(home, 'config.toml'), 'model = "gpt-5.5"\nmodel_reasoning_effort = "high"\n');
@@ -37,7 +37,7 @@ test('snapshotFromCodexConfig reads effective model cache window', () => {
   try {
     process.env.CODEX_HOME = home;
     const snapshot = snapshotFromCodexConfig();
-    assert.equal(snapshot.context?.windowSize, 258400);
+    assert.equal(snapshot.context?.windowSize, 400000);
   } finally {
     if (originalHome === undefined) delete process.env.CODEX_HOME;
     else process.env.CODEX_HOME = originalHome;
