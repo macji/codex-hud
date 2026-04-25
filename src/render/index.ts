@@ -104,14 +104,11 @@ export function renderStatusLine(ctx: RenderContext): string {
   ].join(' | ');
   const shownUsedTokens = snapshot.context.usedTokens ?? (snapshot.context.windowSize ? 0 : null);
   const tokenText = `${compactNumber(shownUsedTokens)}/${compactNumber(snapshot.context.windowSize)}`;
-  const firstLine = [
-    color.theme(model ? `${model} │ ${tokenText} │ ` : `${tokenText} │ `, 'context', ctx.config),
+  const line = [
+    color.theme(model ? `${model} ｜ ${tokenText} ｜ ` : `${tokenText} ｜ `, 'context', ctx.config),
     statusIndicator(contextUsed, ctx),
+    color.theme(` ｜${usage}`, 'context', ctx.config),
   ].join('');
-  const lines = [truncateVisible(firstLine, ctx.config.maxWidth)];
-  if (usage) {
-    lines.push(truncateVisible(color.theme(` ｜${usage}`, 'context', ctx.config), ctx.config.maxWidth));
-  }
 
-  return `${lines.join('\n')}\n`;
+  return `${truncateVisible(line, ctx.config.maxWidth)}\n`;
 }
