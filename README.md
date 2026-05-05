@@ -5,8 +5,7 @@ A statusline-style HUD for OpenAI Codex CLI sessions. Codex HUD keeps the import
 > 🌐 English | [中文文档](README.zh.md)
 
 ```text
-gpt-5.5 high │ 96.5K/258.4K │ [███░░░░░░░] 37%
- ｜5h 3% | weekly 3%
+gpt-5.5 high |  96.5K/  400K | [##--------]  24% | 5h   3% | weekly   3%
 ```
 
 Codex HUD is inspired by [Claude HUD](https://github.com/jarrodwatts/claude-hud), adapted for Codex CLI's configuration files, transcripts, and TUI status surfaces.
@@ -33,21 +32,13 @@ Codex HUD gives you a compact, always-visible view of a Codex session so you do 
 The default Codex TUI footer is optimized for a narrow terminal:
 
 ```text
-gpt-5.5 high │ 0/258.4K │ [░░░░░░░░░░] 0%
- ｜5h ? | weekly ?
+gpt-5.5 high |      0/  400K | [----------]   0% | 5h    ? | weekly    ?
 ```
 
-When Codex has rate-limit data, the second line updates automatically:
+When Codex has rate-limit data, the usage windows update automatically:
 
 ```text
-gpt-5.5 high │ 96.5K/258.4K │ [███░░░░░░░] 37%
- ｜5h 3% | weekly 3%
-```
-
-The second line intentionally starts with `｜` so terminals that collapse the footer into one row still render a clear separator:
-
-```text
-... [░░░░░░░░░░] 0% ｜5h 3% | weekly 3%
+gpt-5.5 high |  96.5K/  400K | [##--------]  24% | 5h   3% | weekly   3%
 ```
 
 ### Full CLI HUD
@@ -244,11 +235,11 @@ The context bar color changes by usage level:
 - Restart Codex CLI after setup.
 - Run `node dist/src/index.js --status-line --no-color` to verify the renderer itself works.
 
-### The second line is missing in Codex TUI
+### Usage or progress fields are missing in Codex TUI
 
 - Make sure you restarted Codex after rebuilding or setup.
-- Verify your Codex build supports multi-line `status_line_command` output.
-- If Codex has not loaded rate-limit data yet, Codex HUD still prints `｜5h ? | weekly ?`; if even that is absent, the running Codex process is not using the current rebuilt binary or multi-line footer patch.
+- Verify your Codex build supports `[tui].status_line_command`.
+- If Codex has not loaded rate-limit data yet, Codex HUD still prints `5h    ? | weekly    ?`; if even that is absent, the running Codex process is not using the current rebuilt binary.
 
 ### A new window starts with high context usage
 
