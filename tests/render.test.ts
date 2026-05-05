@@ -75,7 +75,7 @@ test('renderStatusLine shows rounded derived context percentage', () => {
   assert.match(output, /48\.7K\/1\.1M \| \[░░░░░░░░░░\] 4%/);
 });
 
-test('renderStatusLine emits one ANSI span for stable TUI width', () => {
+test('renderStatusLine colors status segments independently', () => {
   const originalNoColor = process.env.NO_COLOR;
   delete process.env.NO_COLOR;
   const statusSnapshot = snapshot();
@@ -83,8 +83,12 @@ test('renderStatusLine emits one ANSI span for stable TUI width', () => {
   statusSnapshot.usage = { fiveHour: { usedPercentage: 93, resetsAt: null }, weekly: { usedPercentage: 98, resetsAt: null } };
   try {
     const output = renderStatusLine({ snapshot: statusSnapshot, config: mergeConfig({ colors: true }) });
-    assert.equal((output.match(/\x1b\[/g) ?? []).length, 2);
-    assert.match(output, /^\x1b\[38;2;143;188;143mgpt-5\.4 high \| 48\.7K\/1\.1M \| \[░░░░░░░░░░\] 5% \| 5h 93% \| weekly 98%\x1b\[0m\n$/);
+    assert.equal(output.replace(/\x1b\[[0-9;]*m/g, ''), 'gpt-5.4 high | 48.7K/1.1M | [░░░░░░░░░░] 5% | 5h 93% | weekly 98%\n');
+    assert.match(output, /\x1b\[38;2;204;155;31mgpt-5\.4 high\x1b\[0m/);
+    assert.match(output, /\x1b\[38;2;205;127;50m \| \x1b\[0m/);
+    assert.match(output, /\x1b\[38;2;143;188;143m\[░░░░░░░░░░\] 5%\x1b\[0m/);
+    assert.match(output, /\x1b\[38;2;255;140;0m5h 93%\x1b\[0m/);
+    assert.match(output, /\x1b\[38;2;255;107;107mweekly 98%\x1b\[0m/);
   } finally {
     if (originalNoColor === undefined) delete process.env.NO_COLOR;
     else process.env.NO_COLOR = originalNoColor;

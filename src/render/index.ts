@@ -84,13 +84,17 @@ function statusThemeKey(percent: number): 'low' | 'medium' | 'high' | 'critical'
   return 'low';
 }
 
-function statusIndicatorText(value: number | null | undefined): string {
+function statusIndicatorText(value: number | null | undefined, ctx: RenderContext): string {
   const boundedPercent = bounded(value);
-  return `[${rawStatusBar(boundedPercent, 10)}] ${contextPct(value)}`;
+  return color.theme(`[${rawStatusBar(boundedPercent, 10)}] ${contextPct(value)}`, statusThemeKey(boundedPercent), ctx.config);
 }
 
-function usageWindow(label: string, value: number | null | undefined): string {
-  return `${label} ${pct(value)}`;
+function usageWindow(label: string, value: number | null | undefined, ctx: RenderContext): string {
+  return color.theme(`${label} ${pct(value)}`, statusThemeKey(bounded(value)), ctx.config);
+}
+
+function statusSeparator(ctx: RenderContext): string {
+  return color.theme(' | ', 'separator', ctx.config);
 }
 
 export function renderStatusLine(ctx: RenderContext): string {
@@ -100,13 +104,13 @@ export function renderStatusLine(ctx: RenderContext): string {
   const shownUsedTokens = snapshot.context.usedTokens ?? (snapshot.context.windowSize ? 0 : null);
   const tokenText = `${compactNumber(shownUsedTokens)}/${compactNumber(snapshot.context.windowSize)}`;
   const parts = [
-    model || null,
-    tokenText,
-    statusIndicatorText(contextUsed),
-    usageWindow('5h', snapshot.usage?.fiveHour.usedPercentage),
-    usageWindow('weekly', snapshot.usage?.weekly.usedPercentage),
+    model ? color.theme(model, 'model', ctx.config) : null,
+    color.theme(tokenText, 'context', ctx.config),
+    statusIndicatorText(contextUsed, ctx),
+    usageWindow('5h', snapshot.usage?.fiveHour.usedPercentage, ctx),
+    usageWindow('weekly', snapshot.usage?.weekly.usedPercentage, ctx),
   ].filter((part): part is string => Boolean(part));
-  const line = color.theme(parts.join(' | '), statusThemeKey(contextUsed), ctx.config);
+  const line = parts.join(statusSeparator(ctx));
 
   return `${truncateVisible(line, ctx.config.maxWidth)}\n`;
 }
