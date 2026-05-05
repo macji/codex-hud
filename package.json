@@ -8,13 +8,15 @@
     "codex-hud": "dist/src/index.js"
   },
   "files": [
-    "dist/",
-    "src/",
+    "dist/src/",
     "commands/",
-    ".codex-plugin/"
+    ".codex-plugin/",
+    "README.zh.md",
+    "codex-hud-preview.png"
   ],
   "scripts": {
     "build": "tsc",
+    "prepare": "npm run build",
     "test": "npm run build && node --test dist/tests/*.test.js",
     "test:stdin": "npm run build && echo '{\"model\":{\"display_name\":\"gpt-5.4\"},\"context_window\":{\"context_window_size\":200000,\"current_usage\":{\"input_tokens\":45000}},\"rate_limits\":{\"five_hour\":{\"used_percentage\":25}}}' | node dist/src/index.js"
   },

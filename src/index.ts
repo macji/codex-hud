@@ -20,11 +20,18 @@ function flagValue(name: string, fallback: string): string {
 }
 
 async function renderOnce(raw = null as Awaited<ReturnType<typeof readStdin>>): Promise<string> {
+  const statusLine = hasFlag('--status-line');
   const config = await loadConfig();
-  const snapshot = await buildSnapshot(raw);
-  snapshot.codexVersion = snapshot.codexVersion ?? await getCodexVersion();
+  const snapshot = await buildSnapshot(raw, process.cwd(), {
+    includeActivity: !statusLine,
+    includeGit: !statusLine,
+    includeOmx: !statusLine,
+  });
+  if (!statusLine) {
+    snapshot.codexVersion = snapshot.codexVersion ?? await getCodexVersion();
+  }
   if (hasFlag('--json')) return `${JSON.stringify(snapshot, null, 2)}\n`;
-  if (hasFlag('--status-line')) return renderStatusLine({ snapshot, config });
+  if (statusLine) return renderStatusLine({ snapshot, config });
   return render({ snapshot, config });
 }
 

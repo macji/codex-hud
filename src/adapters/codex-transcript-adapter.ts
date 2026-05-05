@@ -9,6 +9,14 @@ interface TranscriptEvent {
   payload?: Record<string, unknown>;
 }
 
+export interface ParseCodexTranscriptOptions {
+  includeActivity?: boolean;
+}
+
+const MAX_FULL_TRANSCRIPT_BYTES = 2 * 1024 * 1024;
+const TRANSCRIPT_HEAD_BYTES = 64 * 1024;
+const TRANSCRIPT_TAIL_BYTES = 2 * 1024 * 1024;
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
@@ -42,6 +50,30 @@ function clampPercent(value: unknown): number | null {
 function readJson(filePath: string): unknown {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function readTranscriptContent(filePath: string): string | null {
+  try {
+    const stat = fs.statSync(filePath);
+    if (stat.size <= MAX_FULL_TRANSCRIPT_BYTES) {
+      return fs.readFileSync(filePath, 'utf8');
+    }
+
+    const fd = fs.openSync(filePath, 'r');
+    try {
+      const headLength = Math.min(TRANSCRIPT_HEAD_BYTES, stat.size);
+      const tailLength = Math.min(TRANSCRIPT_TAIL_BYTES, Math.max(0, stat.size - headLength));
+      const head = Buffer.alloc(headLength);
+      const tail = Buffer.alloc(tailLength);
+      fs.readSync(fd, head, 0, headLength, 0);
+      fs.readSync(fd, tail, 0, tailLength, stat.size - tailLength);
+      return `${head.toString('utf8')}\n${tail.toString('utf8')}`;
+    } finally {
+      fs.closeSync(fd);
+    }
   } catch {
     return null;
   }
@@ -221,16 +253,15 @@ function finishTool(tools: Map<string, ToolEntry>, payload: Record<string, unkno
   tool.endTime = timestamp;
 }
 
-export function parseCodexTranscript(transcriptPath: string): Partial<HudSnapshot> {
+export function parseCodexTranscript(transcriptPath: string, options: ParseCodexTranscriptOptions = {}): Partial<HudSnapshot> {
+  const includeActivity = options.includeActivity ?? true;
   const tools = new Map<string, ToolEntry>();
   const agents = new Map<string, AgentEntry>();
   let todos: TodoItem[] = [];
   const snapshot: Partial<HudSnapshot> = {};
 
-  let content: string;
-  try {
-    content = fs.readFileSync(transcriptPath, 'utf8');
-  } catch {
+  const content = readTranscriptContent(transcriptPath);
+  if (content === null) {
     return {};
   }
 
@@ -263,7 +294,7 @@ export function parseCodexTranscript(transcriptPath: string): Partial<HudSnapsho
       applyTokenCount(snapshot, payload);
     }
 
-    if (event.type === 'response_item' && payload.type === 'function_call') {
+    if (includeActivity && event.type === 'response_item' && payload.type === 'function_call') {
       const name = typeof payload.name === 'string' ? payload.name : 'tool';
       const callId = typeof payload.call_id === 'string' ? payload.call_id : `${name}-${tools.size}`;
       const plannedTodos = extractPlanTodos(payload);
@@ -290,11 +321,11 @@ export function parseCodexTranscript(transcriptPath: string): Partial<HudSnapsho
       }
     }
 
-    if (payload.type === 'exec_command_end' || payload.type === 'patch_apply_end') {
+    if (includeActivity && (payload.type === 'exec_command_end' || payload.type === 'patch_apply_end')) {
       finishTool(tools, payload, timestamp);
     }
 
-    if (payload.type === 'function_call_output') {
+    if (includeActivity && payload.type === 'function_call_output') {
       finishTool(tools, payload, timestamp);
       const agent = agents.get(typeof payload.call_id === 'string' ? payload.call_id : '');
       if (agent) {
@@ -310,7 +341,7 @@ export function parseCodexTranscript(transcriptPath: string): Partial<HudSnapsho
   return snapshot;
 }
 
-export function snapshotFromCodexTranscript(cwd = process.cwd()): Partial<HudSnapshot> {
+export function snapshotFromCodexTranscript(cwd = process.cwd(), options: ParseCodexTranscriptOptions = {}): Partial<HudSnapshot> {
   const transcriptPath = findCodexTranscript(cwd);
-  return transcriptPath ? parseCodexTranscript(transcriptPath) : {};
+  return transcriptPath ? parseCodexTranscript(transcriptPath, options) : {};
 }

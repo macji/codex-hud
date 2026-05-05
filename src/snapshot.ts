@@ -7,6 +7,12 @@ import { snapshotFromStdin } from './adapters/stdin-adapter.js';
 import { getGitStatus } from './git.js';
 import { emptyContext, type HudSnapshot, type RawStdinData } from './types.js';
 
+export interface BuildSnapshotOptions {
+  includeActivity?: boolean;
+  includeGit?: boolean;
+  includeOmx?: boolean;
+}
+
 function merge<T extends object>(...objects: Array<Partial<T> | undefined>): Partial<T> {
   return Object.assign({}, ...objects.filter(Boolean));
 }
@@ -42,12 +48,15 @@ function mergeContext(
   return context;
 }
 
-export async function buildSnapshot(raw: RawStdinData | null, cwd = process.cwd()): Promise<HudSnapshot> {
-  const transcriptSnapshot = snapshotFromCodexTranscript(cwd);
+export async function buildSnapshot(raw: RawStdinData | null, cwd = process.cwd(), options: BuildSnapshotOptions = {}): Promise<HudSnapshot> {
+  const includeActivity = options.includeActivity ?? true;
+  const includeGit = options.includeGit ?? true;
+  const includeOmx = options.includeOmx ?? true;
+  const transcriptSnapshot = snapshotFromCodexTranscript(cwd, { includeActivity });
   const envSnapshot = snapshotFromCodexEnv();
   const stdinSnapshot = snapshotFromStdin(raw, cwd);
   const configSnapshot = snapshotFromCodexConfig(stdinSnapshot.model ?? envSnapshot.model ?? transcriptSnapshot.model);
-  const omxSnapshot = snapshotFromOmx(cwd);
+  const omxSnapshot = includeOmx ? snapshotFromOmx(cwd) : {};
   const effectiveCwd = stdinSnapshot.cwd ?? omxSnapshot.cwd ?? transcriptSnapshot.cwd ?? cwd;
   const session = merge(transcriptSnapshot.session, omxSnapshot.session, stdinSnapshot.session);
   const model = stdinSnapshot.model ?? envSnapshot.model ?? transcriptSnapshot.model ?? configSnapshot.model;
@@ -60,10 +69,10 @@ export async function buildSnapshot(raw: RawStdinData | null, cwd = process.cwd(
     cwd: effectiveCwd,
     context,
     usage: stdinSnapshot.usage ?? envSnapshot.usage ?? transcriptSnapshot.usage ?? null,
-    git: await getGitStatus(effectiveCwd),
-    tools: stdinSnapshot.tools ?? transcriptSnapshot.tools ?? omxSnapshot.tools ?? [],
-    agents: stdinSnapshot.agents ?? transcriptSnapshot.agents ?? omxSnapshot.agents ?? [],
-    todos: stdinSnapshot.todos ?? transcriptSnapshot.todos ?? omxSnapshot.todos ?? [],
+    git: includeGit ? await getGitStatus(effectiveCwd) : null,
+    tools: includeActivity ? stdinSnapshot.tools ?? transcriptSnapshot.tools ?? omxSnapshot.tools ?? [] : [],
+    agents: includeActivity ? stdinSnapshot.agents ?? transcriptSnapshot.agents ?? omxSnapshot.agents ?? [] : [],
+    todos: includeActivity ? stdinSnapshot.todos ?? transcriptSnapshot.todos ?? omxSnapshot.todos ?? [] : [],
     session: {
       cwd: effectiveCwd,
       ...session,

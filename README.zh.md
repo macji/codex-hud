@@ -92,6 +92,20 @@ Codex TUI → status_line_command env → codex-hud → stdout → Codex footer
 
 ## 安装
 
+### 通过 npm 安装
+
+```bash
+npm install -g codex-hud
+codex-hud --setup
+```
+
+也可以直接用 npm 从 GitHub 安装：
+
+```bash
+npm install -g github:macji/codex-hud
+codex-hud --setup
+```
+
 ### 从源码安装
 
 ```bash
@@ -99,6 +113,7 @@ git clone https://github.com/macji/codex-hud.git
 cd codex-hud
 npm install
 npm run build
+node dist/src/index.js --setup
 ```
 
 ### 初始化 HUD 配置
@@ -118,13 +133,13 @@ ${CODEX_HUD_CONFIG:-${CODEX_HOME:-$HOME/.codex}/codex-hud.json}
 先预览将要写入的 Codex 配置：
 
 ```bash
-node dist/src/index.js --setup-dry-run
+codex-hud --setup-dry-run
 ```
 
 确认后应用：
 
 ```bash
-node dist/src/index.js --setup
+codex-hud --setup
 ```
 
 `--setup` 会更新 `~/.codex/config.toml`，写入外部 status command；如果已有配置，会先生成带时间戳的备份。
@@ -134,7 +149,7 @@ node dist/src/index.js --setup
 ```toml
 [tui]
 status_line = []
-status_line_command = "cd \"/path/to/codex-hud\" && CODEX_HUD_CURRENT_ONLY=1 node dist/src/index.js --status-line --color"
+status_line_command = "CODEX_HUD_CURRENT_ONLY=1 \"/path/to/node\" \"/path/to/codex-hud\" --status-line --color"
 ```
 
 执行 setup 后请重启 Codex CLI，让 TUI 读取新的 status command。

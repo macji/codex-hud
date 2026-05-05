@@ -56,6 +56,40 @@ test('parseCodexTranscript upgrades stale GPT-5.5 transcript window to official 
   assert.equal(snapshot.context?.usedPercentage, 10);
 });
 
+test('parseCodexTranscript samples large transcripts from head and tail', () => {
+  const filePath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'codex-transcript-')), 'session.jsonl');
+  const now = new Date().toISOString();
+  const session = { timestamp: now, type: 'session_meta', payload: { id: 'large-session', timestamp: now, cwd: '/repo', model: 'gpt-5.4' } };
+  const filler = { timestamp: now, type: 'event_msg', payload: { type: 'noop', data: 'x'.repeat(2_400_000) } };
+  const tokenCount = {
+    timestamp: now,
+    type: 'event_msg',
+    payload: { type: 'token_count', info: { last_token_usage: { total_tokens: 250 }, model_context_window: 1000 } },
+  };
+  fs.writeFileSync(filePath, `${JSON.stringify(session)}\n${JSON.stringify(filler)}\n${JSON.stringify(tokenCount)}\n`);
+
+  const snapshot = parseCodexTranscript(filePath);
+  assert.equal(snapshot.session?.id, 'large-session');
+  assert.equal(snapshot.model, 'gpt-5.4');
+  assert.equal(snapshot.context?.usedTokens, 250);
+  assert.equal(snapshot.context?.usedPercentage, 25);
+});
+
+test('parseCodexTranscript can skip activity extraction for status-line refreshes', () => {
+  const filePath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'codex-transcript-')), 'session.jsonl');
+  const now = new Date().toISOString();
+  const lines = [
+    { timestamp: now, type: 'session_meta', payload: { id: 's1', timestamp: now, cwd: '/repo' } },
+    { timestamp: now, type: 'response_item', payload: { type: 'function_call', name: 'exec_command', call_id: 'c1', arguments: JSON.stringify({ cmd: 'npm test' }) } },
+    { timestamp: now, type: 'event_msg', payload: { type: 'exec_command_end', call_id: 'c1', stderr: '', success: true } },
+  ];
+  fs.writeFileSync(filePath, `${lines.map(line => JSON.stringify(line)).join('\n')}\n`);
+
+  const snapshot = parseCodexTranscript(filePath, { includeActivity: false });
+  assert.equal(snapshot.session?.id, 's1');
+  assert.deepEqual(snapshot.tools, []);
+});
+
 test('findCodexTranscript prefers current Codex thread id', () => {
   const originalHome = process.env.CODEX_HOME;
   const originalThread = process.env.CODEX_THREAD_ID;

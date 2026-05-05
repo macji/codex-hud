@@ -12,8 +12,8 @@ test('patchCodexConfigToml inserts tui before tui subtable', () => {
 
 test('patchCodexConfigToml writes status line command', () => {
   const input = '[tui]\nstatus_line = ["model-name"]\n';
-  const { output } = patchCodexConfigToml(input, [], 'cd "/repo" && CODEX_HUD_CURRENT_ONLY=1 node dist/src/index.js --status-line --color');
-  assert.match(output, /\[tui\]\nstatus_line = \[\]\nstatus_line_command = "cd \\"\/repo\\" && CODEX_HUD_CURRENT_ONLY=1 node dist\/src\/index.js --status-line --color"/);
+  const { output } = patchCodexConfigToml(input, [], 'CODEX_HUD_CURRENT_ONLY=1 "/node" "/repo/dist/src/index.js" --status-line --color');
+  assert.match(output, /\[tui\]\nstatus_line = \[\]\nstatus_line_command = "CODEX_HUD_CURRENT_ONLY=1 \\"\/node\\" \\"\/repo\/dist\/src\/index.js\\" --status-line --color"/);
 });
 
 test('patchCodexConfigToml replaces existing status line only inside tui', () => {
@@ -32,7 +32,7 @@ test('patchCodexConfigToml is idempotent', () => {
 
 test('defaultStatusLineCommand points at color renderer', () => {
   assert.equal(
-    defaultStatusLineCommand('/repo'),
-    'cd "/repo" && CODEX_HUD_CURRENT_ONLY=1 node dist/src/index.js --status-line --color',
+    defaultStatusLineCommand('/repo/dist/src/index.js', '/node'),
+    'CODEX_HUD_CURRENT_ONLY=1 "/node" "/repo/dist/src/index.js" --status-line --color',
   );
 });

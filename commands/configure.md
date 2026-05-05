@@ -17,4 +17,4 @@ Useful toggles:
 - `display.contextValue`: `percent`, `tokens`, `remaining`, or `both`.
 - `display.customLine`: optional text line, max 80 chars.
 
-Run `node dist/src/index.js --init-config` to create defaults, then edit the JSON file.
+Run `codex-hud --init-config` to create defaults, then edit the JSON file.

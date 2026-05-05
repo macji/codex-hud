@@ -4,8 +4,12 @@ import { DEFAULT_CONFIG, getCodexHome, getConfigPath, writeDefaultConfig } from 
 
 export const DEFAULT_CODEX_STATUS_LINE: string[] = [];
 
-export function defaultStatusLineCommand(repoDir = process.cwd()): string {
-  return `cd "${repoDir.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}" && CODEX_HUD_CURRENT_ONLY=1 node dist/src/index.js --status-line --color`;
+function shellQuote(value: string): string {
+  return `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
+}
+
+export function defaultStatusLineCommand(entryPoint = process.argv[1] ?? path.join(process.cwd(), 'dist', 'src', 'index.js'), nodePath = process.execPath): string {
+  return `CODEX_HUD_CURRENT_ONLY=1 ${shellQuote(nodePath)} ${shellQuote(path.resolve(entryPoint))} --status-line --color`;
 }
 
 export interface SetupResult {
@@ -22,12 +26,8 @@ function statusLineToml(items: string[]): string {
   return `status_line = [${items.map(item => `"${item}"`).join(', ')}]`;
 }
 
-function quotedToml(value: string): string {
-  return `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
-}
-
 function statusLineCommandToml(command: string): string {
-  return `status_line_command = ${quotedToml(command)}`;
+  return `status_line_command = ${shellQuote(command)}`;
 }
 
 function findTableRange(lines: string[], tableName: string): { start: number; end: number } | null {

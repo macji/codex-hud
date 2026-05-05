@@ -92,6 +92,20 @@ Key behavior:
 
 ## Install
 
+### From npm
+
+```bash
+npm install -g codex-hud
+codex-hud --setup
+```
+
+You can also install directly from GitHub with npm:
+
+```bash
+npm install -g github:macji/codex-hud
+codex-hud --setup
+```
+
 ### From source
 
 ```bash
@@ -99,6 +113,7 @@ git clone https://github.com/macji/codex-hud.git
 cd codex-hud
 npm install
 npm run build
+node dist/src/index.js --setup
 ```
 
 ### Initialize HUD config
@@ -118,13 +133,13 @@ ${CODEX_HUD_CONFIG:-${CODEX_HOME:-$HOME/.codex}/codex-hud.json}
 Preview the Codex config change first:
 
 ```bash
-node dist/src/index.js --setup-dry-run
+codex-hud --setup-dry-run
 ```
 
 Apply it:
 
 ```bash
-node dist/src/index.js --setup
+codex-hud --setup
 ```
 
 `--setup` updates `~/.codex/config.toml` with an external status command and writes a timestamped backup before changing an existing config file.
@@ -134,7 +149,7 @@ Expected Codex config:
 ```toml
 [tui]
 status_line = []
-status_line_command = "cd \"/path/to/codex-hud\" && CODEX_HUD_CURRENT_ONLY=1 node dist/src/index.js --status-line --color"
+status_line_command = "CODEX_HUD_CURRENT_ONLY=1 \"/path/to/node\" \"/path/to/codex-hud\" --status-line --color"
 ```
 
 Restart Codex CLI after setup so the TUI loads the new status command.
