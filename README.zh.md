@@ -92,17 +92,17 @@ Codex TUI → status_line_command env → codex-hud → stdout → Codex footer
 
 ## 安装
 
-### 通过 npm 安装
-
-```bash
-npm install -g codex-hud
-codex-hud --setup
-```
-
-也可以直接用 npm 从 GitHub 安装：
+### 通过 npm 从 GitHub 安装
 
 ```bash
 npm install -g github:macji/codex-hud
+codex-hud --setup
+```
+
+Codex HUD 发布到 npm registry 后，也可以使用更短的命令：
+
+```bash
+npm install -g codex-hud
 codex-hud --setup
 ```
 

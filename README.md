@@ -92,17 +92,17 @@ Key behavior:
 
 ## Install
 
-### From npm
-
-```bash
-npm install -g codex-hud
-codex-hud --setup
-```
-
-You can also install directly from GitHub with npm:
+### From GitHub with npm
 
 ```bash
 npm install -g github:macji/codex-hud
+codex-hud --setup
+```
+
+After Codex HUD is published to the npm registry, this shorter command will also work:
+
+```bash
+npm install -g codex-hud
 codex-hud --setup
 ```
 
