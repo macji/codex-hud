@@ -21,7 +21,9 @@ jspm_packages/
 web_modules/
 
 # Build and coverage output
-dist/
+dist/*
+!dist/src/
+!dist/src/**
 build/Release
 coverage/
 *.lcov
