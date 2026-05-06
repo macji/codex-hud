@@ -1,4 +1,4 @@
-import { truncateVisible, visibleLength } from '../utils/terminal.js';
+import { getTerminalWidth, truncateVisible, visibleLength } from '../utils/terminal.js';
 import { color } from './colors.js';
 import { renderAgentsLine, renderContextLine, renderEnvironmentLine, renderProjectLine, renderTodosLine, renderToolsLine, renderUsageLine } from './session-line.js';
 function renderElement(ctx, element) {
@@ -39,7 +39,7 @@ function expanded(ctx, maxWidth) {
     ].map(line => truncateVisible(line, maxWidth));
 }
 export function renderLines(ctx) {
-    const maxWidth = ctx.config.maxWidth;
+    const maxWidth = Math.min(ctx.config.maxWidth, getTerminalWidth(ctx.config.maxWidth));
     const lines = expanded(ctx, maxWidth);
     const layout = ctx.config.lineLayout;
     return layout === 'compact' ? compact(lines, maxWidth) : lines;
@@ -67,7 +67,7 @@ function bounded(value) {
 }
 function rawStatusBar(percent, width) {
     const boundedPercent = bounded(percent);
-    const filled = Math.floor((boundedPercent / 100) * width);
+    const filled = boundedPercent > 0 ? Math.max(1, Math.round((boundedPercent / 100) * width)) : 0;
     return `${'#'.repeat(filled)}${'-'.repeat(width - filled)}`;
 }
 function statusThemeKey(percent) {
@@ -79,27 +79,26 @@ function statusThemeKey(percent) {
         return 'medium';
     return 'low';
 }
-function statusIndicatorText(value) {
+function statusIndicatorText(value, usedTokens) {
     const boundedPercent = bounded(value);
-    return `[${rawStatusBar(boundedPercent, 10)}] ${contextPct(value).padStart(4)}`;
+    return `[${rawStatusBar(boundedPercent, 10)}] ${contextPct(value)}(${compactNumber(usedTokens)})`;
 }
 function usageWindow(label, value) {
-    return `${label} ${pct(value).padStart(4)}`;
+    return `${label} ${pct(value)}`;
 }
 export function renderStatusLine(ctx) {
     const snapshot = ctx.snapshot;
     const contextUsed = bounded(snapshot.context.usedPercentage);
+    const maxWidth = Math.min(ctx.config.maxWidth, getTerminalWidth(ctx.config.maxWidth));
     const model = [snapshot.model, snapshot.reasoningEffort].filter(Boolean).join(' ');
     const shownUsedTokens = snapshot.context.usedTokens ?? (snapshot.context.windowSize ? 0 : null);
-    const tokenText = `${compactNumber(shownUsedTokens).padStart(6)}/${compactNumber(snapshot.context.windowSize).padStart(6)}`;
     const parts = [
         model || null,
-        tokenText,
-        statusIndicatorText(contextUsed),
+        statusIndicatorText(contextUsed, shownUsedTokens),
         usageWindow('5h', snapshot.usage?.fiveHour.usedPercentage),
         usageWindow('weekly', snapshot.usage?.weekly.usedPercentage),
     ].filter((part) => Boolean(part));
     const line = color.theme(parts.join(' | '), statusThemeKey(contextUsed), ctx.config);
-    return `${truncateVisible(line, ctx.config.maxWidth)}\n`;
+    return `${truncateVisible(line, maxWidth)}\n`;
 }
 //# sourceMappingURL=index.js.map

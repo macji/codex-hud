@@ -3,6 +3,7 @@ import test from 'node:test';
 import { mergeConfig } from '../src/config.js';
 import { render, renderStatusLine } from '../src/render/index.js';
 import { emptyContext, type HudSnapshot } from '../src/types.js';
+import { visibleLength } from '../src/utils/terminal.js';
 
 function snapshot(): HudSnapshot {
   return {
@@ -88,5 +89,21 @@ test('renderStatusLine emits one ANSI span for stable TUI width', () => {
   } finally {
     if (originalNoColor === undefined) delete process.env.NO_COLOR;
     else process.env.NO_COLOR = originalNoColor;
+  }
+});
+
+test('renderStatusLine respects terminal columns for narrow TUI footers', () => {
+  const originalColumns = process.env.COLUMNS;
+  process.env.COLUMNS = '45';
+  const statusSnapshot = snapshot();
+  statusSnapshot.model = 'gpt-5.5';
+  statusSnapshot.context = { ...statusSnapshot.context, windowSize: 400_000, usedTokens: 170_500, usedPercentage: 43 };
+  statusSnapshot.usage = { fiveHour: { usedPercentage: 3, resetsAt: null }, weekly: { usedPercentage: 3, resetsAt: null } };
+  try {
+    const output = renderStatusLine({ snapshot: statusSnapshot, config: mergeConfig({ colors: false, maxWidth: 120 }) });
+    assert.ok(visibleLength(output.trimEnd()) <= 45, output);
+  } finally {
+    if (originalColumns === undefined) delete process.env.COLUMNS;
+    else process.env.COLUMNS = originalColumns;
   }
 });

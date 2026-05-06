@@ -1,6 +1,6 @@
 import type { HudElement, LineLayout } from '../config.js';
 import type { RenderContext } from '../types.js';
-import { truncateVisible, visibleLength } from '../utils/terminal.js';
+import { getTerminalWidth, truncateVisible, visibleLength } from '../utils/terminal.js';
 import { color } from './colors.js';
 import { renderAgentsLine, renderContextLine, renderEnvironmentLine, renderProjectLine, renderTodosLine, renderToolsLine, renderUsageLine } from './session-line.js';
 
@@ -42,7 +42,7 @@ function expanded(ctx: RenderContext, maxWidth: number): string[] {
 }
 
 export function renderLines(ctx: RenderContext): string[] {
-  const maxWidth = ctx.config.maxWidth;
+  const maxWidth = Math.min(ctx.config.maxWidth, getTerminalWidth(ctx.config.maxWidth));
   const lines = expanded(ctx, maxWidth);
   const layout: LineLayout = ctx.config.lineLayout;
   return layout === 'compact' ? compact(lines, maxWidth) : lines;
@@ -96,6 +96,7 @@ function usageWindow(label: string, value: number | null | undefined): string {
 export function renderStatusLine(ctx: RenderContext): string {
   const snapshot = ctx.snapshot;
   const contextUsed = bounded(snapshot.context.usedPercentage);
+  const maxWidth = Math.min(ctx.config.maxWidth, getTerminalWidth(ctx.config.maxWidth));
   const model = [snapshot.model, snapshot.reasoningEffort].filter(Boolean).join(' ');
   const shownUsedTokens = snapshot.context.usedTokens ?? (snapshot.context.windowSize ? 0 : null);
   const parts = [
@@ -106,5 +107,5 @@ export function renderStatusLine(ctx: RenderContext): string {
   ].filter((part): part is string => Boolean(part));
   const line = color.theme(parts.join(' | '), statusThemeKey(contextUsed), ctx.config);
 
-  return `${truncateVisible(line, ctx.config.maxWidth)}\n`;
+  return `${truncateVisible(line, maxWidth)}\n`;
 }
