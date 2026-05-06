@@ -5,7 +5,7 @@ Codex HUD 是一个面向 OpenAI Codex CLI 会话的状态栏式 HUD。它把模
 > 🌐 [English](README.md) | 中文文档
 
 ```text
-gpt-5.5 high |  96.5K/  400K | [##--------]  24% | 5h   3% | weekly   3%
+gpt-5.5 high | [##--------] 24%(96.5K) | 5h 3% | weekly 3%
 ```
 
 Codex HUD 参考了 [Claude HUD](https://github.com/jarrodwatts/claude-hud) 的产品形态，但实现上适配 Codex CLI 的配置文件、JSONL transcript 和 TUI status surface。
@@ -32,13 +32,13 @@ Codex HUD 用一个紧凑、常驻的视图展示 Codex 当前会话状态，避
 默认 Codex TUI footer 针对窄终端优化：
 
 ```text
-gpt-5.5 high |      0/  400K | [----------]   0% | 5h    ? | weekly    ?
+gpt-5.5 high | [----------] 0%(0) | 5h ? | weekly ?
 ```
 
 当 Codex 拿到 rate-limit 数据后，用量窗口会自动更新：
 
 ```text
-gpt-5.5 high |  96.5K/  400K | [##--------]  24% | 5h   3% | weekly   3%
+gpt-5.5 high | [##--------] 24%(96.5K) | 5h 3% | weekly 3%
 ```
 
 ### 完整 CLI HUD

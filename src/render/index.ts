@@ -73,7 +73,7 @@ function bounded(value: number | null | undefined): number {
 
 function rawStatusBar(percent: number, width: number): string {
   const boundedPercent = bounded(percent);
-  const filled = Math.floor((boundedPercent / 100) * width);
+  const filled = boundedPercent > 0 ? Math.max(1, Math.round((boundedPercent / 100) * width)) : 0;
   return `${'#'.repeat(filled)}${'-'.repeat(width - filled)}`;
 }
 
@@ -84,13 +84,13 @@ function statusThemeKey(percent: number): 'low' | 'medium' | 'high' | 'critical'
   return 'low';
 }
 
-function statusIndicatorText(value: number | null | undefined): string {
+function statusIndicatorText(value: number | null | undefined, usedTokens: number | null | undefined): string {
   const boundedPercent = bounded(value);
-  return `[${rawStatusBar(boundedPercent, 10)}] ${contextPct(value).padStart(4)}`;
+  return `[${rawStatusBar(boundedPercent, 10)}] ${contextPct(value)}(${compactNumber(usedTokens)})`;
 }
 
 function usageWindow(label: string, value: number | null | undefined): string {
-  return `${label} ${pct(value).padStart(4)}`;
+  return `${label} ${pct(value)}`;
 }
 
 export function renderStatusLine(ctx: RenderContext): string {
@@ -98,11 +98,9 @@ export function renderStatusLine(ctx: RenderContext): string {
   const contextUsed = bounded(snapshot.context.usedPercentage);
   const model = [snapshot.model, snapshot.reasoningEffort].filter(Boolean).join(' ');
   const shownUsedTokens = snapshot.context.usedTokens ?? (snapshot.context.windowSize ? 0 : null);
-  const tokenText = `${compactNumber(shownUsedTokens).padStart(6)}/${compactNumber(snapshot.context.windowSize).padStart(6)}`;
   const parts = [
     model || null,
-    tokenText,
-    statusIndicatorText(contextUsed),
+    statusIndicatorText(contextUsed, shownUsedTokens),
     usageWindow('5h', snapshot.usage?.fiveHour.usedPercentage),
     usageWindow('weekly', snapshot.usage?.weekly.usedPercentage),
   ].filter((part): part is string => Boolean(part));

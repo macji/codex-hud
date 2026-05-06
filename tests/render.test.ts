@@ -48,31 +48,31 @@ test('renderStatusLine emits progress bars', () => {
   statusSnapshot.context = { ...statusSnapshot.context, windowSize: 1_100_000, usedTokens: 48_700, usedPercentage: 5 };
   statusSnapshot.usage = { fiveHour: { usedPercentage: 93, resetsAt: null }, weekly: { usedPercentage: 98, resetsAt: null } };
   const output = renderStatusLine({ snapshot: statusSnapshot, config: mergeConfig({ colors: false }) });
-  assert.equal(output, 'gpt-5.5 high |  48.7K/  1.1M | [----------]   5% | 5h  93% | weekly  98%\n');
+  assert.equal(output, 'gpt-5.5 high | [#---------] 5%(48.7K) | 5h 93% | weekly 98%\n');
   assert.doesNotMatch(output, /\n.+\n/);
 });
 
 test('renderStatusLine keeps usage inline', () => {
   const statusSnapshot = snapshot();
   statusSnapshot.model = 'gpt-5.5';
-  statusSnapshot.context = { ...statusSnapshot.context, windowSize: 258_400, usedTokens: 208_500, usedPercentage: 80.69 };
-  statusSnapshot.usage = { fiveHour: { usedPercentage: 1, resetsAt: null }, weekly: { usedPercentage: 3, resetsAt: null } };
+  statusSnapshot.context = { ...statusSnapshot.context, windowSize: 400_000, usedTokens: 100_000, usedPercentage: 1 };
+  statusSnapshot.usage = { fiveHour: { usedPercentage: 2, resetsAt: null }, weekly: { usedPercentage: 3, resetsAt: null } };
   const output = renderStatusLine({ snapshot: statusSnapshot, config: mergeConfig({ colors: false }) });
-  assert.equal(output, 'gpt-5.5 high | 208.5K/258.4K | [########--]  81% | 5h   1% | weekly   3%\n');
+  assert.equal(output, 'gpt-5.5 high | [#---------] 1%(100K) | 5h 2% | weekly 3%\n');
 });
 
 test('renderStatusLine always reserves inline usage placeholders', () => {
   const statusSnapshot = snapshot();
   statusSnapshot.usage = null;
   const output = renderStatusLine({ snapshot: statusSnapshot, config: mergeConfig({ colors: false }) });
-  assert.match(output, / \| 5h {4}\? \| weekly {4}\?\n$/);
+  assert.match(output, / \| 5h \? \| weekly \?\n$/);
 });
 
 test('renderStatusLine shows rounded derived context percentage', () => {
   const statusSnapshot = snapshot();
   statusSnapshot.context = { ...statusSnapshot.context, windowSize: 1_100_000, usedTokens: 48_700, usedPercentage: (48_700 / 1_100_000) * 100 };
   const output = renderStatusLine({ snapshot: statusSnapshot, config: mergeConfig({ colors: false }) });
-  assert.match(output, /48\.7K\/  1\.1M \| \[----------\]   4%/);
+  assert.match(output, /\[#---------\] 4%\(48\.7K\)/);
 });
 
 test('renderStatusLine emits one ANSI span for stable TUI width', () => {
@@ -84,7 +84,7 @@ test('renderStatusLine emits one ANSI span for stable TUI width', () => {
   try {
     const output = renderStatusLine({ snapshot: statusSnapshot, config: mergeConfig({ colors: true }) });
     assert.equal((output.match(/\x1b\[/g) ?? []).length, 2);
-    assert.match(output, /^\x1b\[38;2;143;188;143mgpt-5\.4 high \|  48\.7K\/  1\.1M \| \[----------\]   5% \| 5h  93% \| weekly  98%\x1b\[0m\n$/);
+    assert.match(output, /^\x1b\[38;2;143;188;143mgpt-5\.4 high \| \[#---------\] 5%\(48\.7K\) \| 5h 93% \| weekly 98%\x1b\[0m\n$/);
   } finally {
     if (originalNoColor === undefined) delete process.env.NO_COLOR;
     else process.env.NO_COLOR = originalNoColor;

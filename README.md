@@ -5,7 +5,7 @@ A statusline-style HUD for OpenAI Codex CLI sessions. Codex HUD keeps the import
 > 🌐 English | [中文文档](README.zh.md)
 
 ```text
-gpt-5.5 high |  96.5K/  400K | [##--------]  24% | 5h   3% | weekly   3%
+gpt-5.5 high | [##--------] 24%(96.5K) | 5h 3% | weekly 3%
 ```
 
 Codex HUD is inspired by [Claude HUD](https://github.com/jarrodwatts/claude-hud), adapted for Codex CLI's configuration files, transcripts, and TUI status surfaces.
@@ -32,13 +32,13 @@ Codex HUD gives you a compact, always-visible view of a Codex session so you do 
 The default Codex TUI footer is optimized for a narrow terminal:
 
 ```text
-gpt-5.5 high |      0/  400K | [----------]   0% | 5h    ? | weekly    ?
+gpt-5.5 high | [----------] 0%(0) | 5h ? | weekly ?
 ```
 
 When Codex has rate-limit data, the usage windows update automatically:
 
 ```text
-gpt-5.5 high |  96.5K/  400K | [##--------]  24% | 5h   3% | weekly   3%
+gpt-5.5 high | [##--------] 24%(96.5K) | 5h 3% | weekly 3%
 ```
 
 ### Full CLI HUD
