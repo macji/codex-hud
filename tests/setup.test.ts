@@ -7,24 +7,25 @@ test('patchCodexConfigToml inserts tui before tui subtable', () => {
   const { output, changed } = patchCodexConfigToml(input);
   assert.equal(changed, true);
   assert.doesNotMatch(output, /^model_context_window =/m);
-  assert.match(output, /\[tui\]\nstatus_line = \[\]\n\n\[tui\.model_availability_nux\]/);
+  assert.match(output, /\[tui\]\nstatus_line = \["model-with-reasoning", "git-branch", "context-used", "five-hour-limit", "weekly-limit"\]\n\n\[tui\.model_availability_nux\]/);
 });
 
-test('patchCodexConfigToml writes status line command', () => {
-  const input = '[tui]\nstatus_line = ["model-name"]\n';
-  const { output } = patchCodexConfigToml(input, [], 'CODEX_HUD_CURRENT_ONLY=1 "/node" "/repo/dist/src/index.js" --status-line --color');
-  assert.match(output, /\[tui\]\nstatus_line = \[\]\nstatus_line_command = "CODEX_HUD_CURRENT_ONLY=1 \\"\/node\\" \\"\/repo\/dist\/src\/index.js\\" --status-line --color"/);
+test('patchCodexConfigToml removes unsupported status line command', () => {
+  const input = '[tui]\nstatus_line = ["model-name"]\nstatus_line_command = "CODEX_HUD_CURRENT_ONLY=1 \\"/node\\" \\"/repo/dist/src/index.js\\" --status-line --color"\n';
+  const { output } = patchCodexConfigToml(input);
+  assert.match(output, /\[tui\]\nstatus_line = \["model-with-reasoning", "git-branch", "context-used", "five-hour-limit", "weekly-limit"\]\n/);
+  assert.doesNotMatch(output, /status_line_command/);
 });
 
 test('patchCodexConfigToml replaces existing status line only inside tui', () => {
   const input = '[tui]\nstatus_line = ["model-name"]\n\n[features]\ncodex_hooks = true\n';
   const { output } = patchCodexConfigToml(input, DEFAULT_CODEX_STATUS_LINE);
-  assert.match(output, /\[tui\]\nstatus_line = \[\]/);
+  assert.match(output, /\[tui\]\nstatus_line = \["model-with-reasoning", "git-branch", "context-used", "five-hour-limit", "weekly-limit"\]/);
   assert.match(output, /\[features\]\ncodex_hooks = true/);
 });
 
 test('patchCodexConfigToml is idempotent', () => {
-  const input = '[tui]\nstatus_line = []\n';
+  const input = '[tui]\nstatus_line = ["model-with-reasoning", "git-branch", "context-used", "five-hour-limit", "weekly-limit"]\n';
   const { output, changed } = patchCodexConfigToml(input);
   assert.equal(changed, false);
   assert.equal(output, input);

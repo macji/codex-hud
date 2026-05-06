@@ -1,7 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_CONFIG, getCodexHome, getConfigPath, writeDefaultConfig } from './config.js';
-export const DEFAULT_CODEX_STATUS_LINE = [];
+export const DEFAULT_CODEX_STATUS_LINE = [
+    'model-with-reasoning',
+    'git-branch',
+    'context-used',
+    'five-hour-limit',
+    'weekly-limit',
+];
 function shellQuote(value) {
     return `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
 }
@@ -10,9 +16,6 @@ export function defaultStatusLineCommand(entryPoint = process.argv[1] ?? path.jo
 }
 function statusLineToml(items) {
     return `status_line = [${items.map(item => `"${item}"`).join(', ')}]`;
-}
-function statusLineCommandToml(command) {
-    return `status_line_command = ${shellQuote(command)}`;
 }
 function findTableRange(lines, tableName) {
     const tableHeader = `[${tableName}]`;
@@ -29,11 +32,10 @@ function findTableRange(lines, tableName) {
     }
     return { start, end };
 }
-export function patchCodexConfigToml(input, statusLine = DEFAULT_CODEX_STATUS_LINE, statusLineCommand) {
+export function patchCodexConfigToml(input, statusLine = DEFAULT_CODEX_STATUS_LINE) {
     const normalizedInput = input.trimEnd();
     const lines = normalizedInput ? normalizedInput.split(/\r?\n/) : [];
     const desiredLine = statusLineToml(statusLine);
-    const desiredCommandLine = statusLineCommand ? statusLineCommandToml(statusLineCommand) : null;
     const tuiRange = findTableRange(lines, 'tui');
     if (tuiRange) {
         let changed = false;
@@ -52,33 +54,25 @@ export function patchCodexConfigToml(input, statusLine = DEFAULT_CODEX_STATUS_LI
             tuiRange.end += 1;
             changed = true;
         }
-        if (desiredCommandLine) {
-            const commandIndex = lines
-                .slice(tuiRange.start + 1, tuiRange.end)
-                .findIndex(line => /^\s*status_line_command\s*=/.test(line));
-            if (commandIndex !== -1) {
-                const actualIndex = tuiRange.start + 1 + commandIndex;
-                if (lines[actualIndex] !== desiredCommandLine) {
-                    lines[actualIndex] = desiredCommandLine;
-                    changed = true;
-                }
-            }
-            else {
-                lines.splice(tuiRange.start + 2, 0, desiredCommandLine);
-                changed = true;
-            }
+        const commandIndex = lines
+            .slice(tuiRange.start + 1, tuiRange.end)
+            .findIndex(line => /^\s*status_line_command\s*=/.test(line));
+        if (commandIndex !== -1) {
+            const actualIndex = tuiRange.start + 1 + commandIndex;
+            lines.splice(actualIndex, 1);
+            changed = true;
         }
         return { output: `${lines.join('\n')}\n`, changed };
     }
     const firstTuiSubtable = lines.findIndex(line => /^\s*\[tui\./.test(line));
-    const block = ['[tui]', desiredLine, ...(desiredCommandLine ? [desiredCommandLine] : []), ''];
+    const block = ['[tui]', desiredLine, ''];
     if (firstTuiSubtable !== -1) {
         lines.splice(firstTuiSubtable, 0, ...block);
     }
     else {
         if (lines.length > 0 && lines.at(-1) !== '')
             lines.push('');
-        lines.push('[tui]', desiredLine, ...(desiredCommandLine ? [desiredCommandLine] : []));
+        lines.push('[tui]', desiredLine);
     }
     return { output: `${lines.join('\n')}\n`, changed: true };
 }
@@ -98,10 +92,9 @@ async function ensureHudConfig(dryRun) {
 export async function runSetup(options = {}) {
     const dryRun = options.dryRun ?? false;
     const statusLine = options.statusLine ?? DEFAULT_CODEX_STATUS_LINE;
-    const statusLineCommand = defaultStatusLineCommand();
     const configPath = path.join(getCodexHome(), 'config.toml');
     const existing = await fs.promises.readFile(configPath, 'utf8').catch(() => '');
-    const patched = patchCodexConfigToml(existing, statusLine, statusLineCommand);
+    const patched = patchCodexConfigToml(existing, statusLine);
     const hudConfigPath = await ensureHudConfig(dryRun);
     let backupPath;
     if (patched.changed && !dryRun) {
@@ -122,7 +115,6 @@ export async function runSetup(options = {}) {
         changed: patched.changed,
         dryRun,
         statusLine,
-        statusLineCommand,
     };
 }
 //# sourceMappingURL=setup.js.map

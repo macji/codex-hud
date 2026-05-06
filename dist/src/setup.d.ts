@@ -7,9 +7,8 @@ export interface SetupResult {
     changed: boolean;
     dryRun: boolean;
     statusLine: string[];
-    statusLineCommand?: string;
 }
-export declare function patchCodexConfigToml(input: string, statusLine?: string[], statusLineCommand?: string): {
+export declare function patchCodexConfigToml(input: string, statusLine?: string[]): {
     output: string;
     changed: boolean;
 };

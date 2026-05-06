@@ -58,7 +58,8 @@ Expanded output can include project, context, usage, environment, tools, agents,
 Codex HUD combines multiple local data sources:
 
 ```text
-Codex TUI → status_line_command env → codex-hud → stdout → Codex footer
+Codex TUI → native status_line → Codex footer
+codex-hud CLI → Codex config + transcripts → expanded HUD/stdout
        ↘ Codex config + model cache
        ↘ Codex JSONL transcript
        ↘ optional stdin payload
@@ -79,7 +80,7 @@ Key behavior:
 - Node.js 18 or newer.
 - npm.
 - Codex CLI.
-- For the rich in-TUI footer: a Codex CLI build that supports `[tui].status_line_command` and passes session/rate-limit environment data to the command. The standalone `codex-hud` CLI works without this patch.
+- For the in-TUI footer: a Codex CLI build with native `[tui].status_line` support. The standalone `codex-hud` CLI works independently.
 
 ## Install
 
@@ -133,17 +134,16 @@ Apply it:
 codex-hud --setup
 ```
 
-`--setup` updates `~/.codex/config.toml` with an external status command and writes a timestamped backup before changing an existing config file.
+`--setup` updates `~/.codex/config.toml` with Codex's native status line items and writes a timestamped backup before changing an existing config file.
 
 Expected Codex config:
 
 ```toml
 [tui]
-status_line = []
-status_line_command = "CODEX_HUD_CURRENT_ONLY=1 \"/path/to/node\" \"/path/to/codex-hud\" --status-line --color"
+status_line = ["model-with-reasoning", "git-branch", "context-used", "five-hour-limit", "weekly-limit"]
 ```
 
-Restart Codex CLI after setup so the TUI loads the new status command.
+Restart Codex CLI after setup so the TUI loads the new status line.
 
 ## Usage
 
@@ -231,15 +231,15 @@ The context bar color changes by usage level:
 ### The status line does not appear
 
 - Run `node dist/src/index.js --setup`.
-- Confirm `~/.codex/config.toml` contains `[tui].status_line_command`.
+- Confirm `~/.codex/config.toml` contains a non-empty `[tui].status_line`.
 - Restart Codex CLI after setup.
 - Run `node dist/src/index.js --status-line --no-color` to verify the renderer itself works.
 
 ### Usage or progress fields are missing in Codex TUI
 
 - Make sure you restarted Codex after rebuilding or setup.
-- Verify your Codex build supports `[tui].status_line_command`.
-- If Codex has not loaded rate-limit data yet, Codex HUD still prints `5h    ? | weekly    ?`; if even that is absent, the running Codex process is not using the current rebuilt binary.
+- Verify your Codex build supports native `[tui].status_line` items.
+- If Codex has not loaded rate-limit data yet, rate-limit status line items may be omitted or show as unknown.
 
 ### A new window starts with high context usage
 

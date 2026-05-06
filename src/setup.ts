@@ -2,7 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_CONFIG, getCodexHome, getConfigPath, writeDefaultConfig } from './config.js';
 
-export const DEFAULT_CODEX_STATUS_LINE: string[] = [];
+export const DEFAULT_CODEX_STATUS_LINE: string[] = [
+  'model-with-reasoning',
+  'git-branch',
+  'context-used',
+  'five-hour-limit',
+  'weekly-limit',
+];
 
 function shellQuote(value: string): string {
   return `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
@@ -19,15 +25,10 @@ export interface SetupResult {
   changed: boolean;
   dryRun: boolean;
   statusLine: string[];
-  statusLineCommand?: string;
 }
 
 function statusLineToml(items: string[]): string {
   return `status_line = [${items.map(item => `"${item}"`).join(', ')}]`;
-}
-
-function statusLineCommandToml(command: string): string {
-  return `status_line_command = ${shellQuote(command)}`;
 }
 
 function findTableRange(lines: string[], tableName: string): { start: number; end: number } | null {
@@ -48,12 +49,10 @@ function findTableRange(lines: string[], tableName: string): { start: number; en
 export function patchCodexConfigToml(
   input: string,
   statusLine = DEFAULT_CODEX_STATUS_LINE,
-  statusLineCommand?: string,
 ): { output: string; changed: boolean } {
   const normalizedInput = input.trimEnd();
   const lines = normalizedInput ? normalizedInput.split(/\r?\n/) : [];
   const desiredLine = statusLineToml(statusLine);
-  const desiredCommandLine = statusLineCommand ? statusLineCommandToml(statusLineCommand) : null;
   const tuiRange = findTableRange(lines, 'tui');
 
   if (tuiRange) {
@@ -72,31 +71,24 @@ export function patchCodexConfigToml(
       tuiRange.end += 1;
       changed = true;
     }
-    if (desiredCommandLine) {
-      const commandIndex = lines
-        .slice(tuiRange.start + 1, tuiRange.end)
-        .findIndex(line => /^\s*status_line_command\s*=/.test(line));
-      if (commandIndex !== -1) {
-        const actualIndex = tuiRange.start + 1 + commandIndex;
-        if (lines[actualIndex] !== desiredCommandLine) {
-          lines[actualIndex] = desiredCommandLine;
-          changed = true;
-        }
-      } else {
-        lines.splice(tuiRange.start + 2, 0, desiredCommandLine);
-        changed = true;
-      }
+    const commandIndex = lines
+      .slice(tuiRange.start + 1, tuiRange.end)
+      .findIndex(line => /^\s*status_line_command\s*=/.test(line));
+    if (commandIndex !== -1) {
+      const actualIndex = tuiRange.start + 1 + commandIndex;
+      lines.splice(actualIndex, 1);
+      changed = true;
     }
     return { output: `${lines.join('\n')}\n`, changed };
   }
 
   const firstTuiSubtable = lines.findIndex(line => /^\s*\[tui\./.test(line));
-  const block = ['[tui]', desiredLine, ...(desiredCommandLine ? [desiredCommandLine] : []), ''];
+  const block = ['[tui]', desiredLine, ''];
   if (firstTuiSubtable !== -1) {
     lines.splice(firstTuiSubtable, 0, ...block);
   } else {
     if (lines.length > 0 && lines.at(-1) !== '') lines.push('');
-    lines.push('[tui]', desiredLine, ...(desiredCommandLine ? [desiredCommandLine] : []));
+    lines.push('[tui]', desiredLine);
   }
   return { output: `${lines.join('\n')}\n`, changed: true };
 }
@@ -118,10 +110,9 @@ async function ensureHudConfig(dryRun: boolean): Promise<string> {
 export async function runSetup(options: { dryRun?: boolean; statusLine?: string[] } = {}): Promise<SetupResult> {
   const dryRun = options.dryRun ?? false;
   const statusLine = options.statusLine ?? DEFAULT_CODEX_STATUS_LINE;
-  const statusLineCommand = defaultStatusLineCommand();
   const configPath = path.join(getCodexHome(), 'config.toml');
   const existing = await fs.promises.readFile(configPath, 'utf8').catch(() => '');
-  const patched = patchCodexConfigToml(existing, statusLine, statusLineCommand);
+  const patched = patchCodexConfigToml(existing, statusLine);
   const hudConfigPath = await ensureHudConfig(dryRun);
   let backupPath: string | undefined;
 
@@ -145,6 +136,5 @@ export async function runSetup(options: { dryRun?: boolean; statusLine?: string[
     changed: patched.changed,
     dryRun,
     statusLine,
-    statusLineCommand,
   };
 }

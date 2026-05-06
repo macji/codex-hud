@@ -76,8 +76,7 @@ async function main() {
             `codex-hud setup ${result.dryRun ? 'dry-run' : 'complete'}`,
             `Codex config: ${result.configPath}`,
             `HUD config: ${result.hudConfigPath}`,
-            `Status line: ${result.statusLine.length ? result.statusLine.join(', ') : '(external command only)'}`,
-            result.statusLineCommand ? `Status command: ${result.statusLineCommand}` : undefined,
+            `Status line: ${result.statusLine.join(', ')}`,
             result.backupPath ? `Backup: ${result.backupPath}` : undefined,
             `Changed: ${result.changed ? 'yes' : 'no'}`,
         ].filter(Boolean).join('\n') + '\n');

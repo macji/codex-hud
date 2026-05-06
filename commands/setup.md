@@ -11,15 +11,14 @@ allowed-tools: Bash, Read, Edit
 
 `--setup` writes a timestamped `config.toml.codex-hud-backup-*` before changing an existing Codex config.
 
-The configured Codex TUI status command is:
+The configured Codex TUI status line is:
 
 ```toml
 [tui]
-status_line = []
-status_line_command = "CODEX_HUD_CURRENT_ONLY=1 \"/path/to/node\" \"/path/to/codex-hud\" --status-line --color"
+status_line = ["model-with-reasoning", "git-branch", "context-used", "five-hour-limit", "weekly-limit"]
 ```
 
-4. Restart Codex CLI so the TUI loads the new status command.
+4. Restart Codex CLI so the TUI loads the new status line.
 5. Verify HUD output:
 
 ```bash
@@ -28,4 +27,4 @@ codex-hud --status-line --no-color
 codex-hud --watch
 ```
 
-The standalone CLI works without a patched Codex build. The in-TUI footer requires Codex support for `[tui].status_line_command` and multi-line status output.
+The standalone CLI works independently. The in-TUI footer uses Codex's native `[tui].status_line` support.
