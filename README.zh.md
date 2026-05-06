@@ -86,7 +86,7 @@ Codex TUI → status_line_command env → codex-hud → stdout → Codex footer
 ### 通过 npm 从 GitHub 安装
 
 ```bash
-npm install -g github:macji/codex-hud
+npm install -g github:macji/codex-hud --install-links=true
 codex-hud --setup
 ```
 

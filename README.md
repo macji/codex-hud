@@ -86,7 +86,7 @@ Key behavior:
 ### From GitHub with npm
 
 ```bash
-npm install -g github:macji/codex-hud
+npm install -g github:macji/codex-hud --install-links=true
 codex-hud --setup
 ```
 
